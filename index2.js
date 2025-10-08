@@ -483,7 +483,7 @@ bot.on('callback_query', async (callbackQuery) => {
 
   const isPaid = await checkQrisStatus(qrId);
 
-  if (["INACTIVE", "ACTIVE", "SUCCESS", "PAID"].includes(isPaid)) {
+  if (["INACTIVE", "SUCCESS", "PAID"].includes(isPaid)) {
     await updateOrderStatus(orderId, "Pembayaran Diterima");
 
     const jumlahProduk = parseInt(order.jumlah_produk);
