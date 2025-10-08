@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const { deleteExpiredGsuite } = require('./deleteExpiredUsers');
 
 
-const telegramToken = '8430362255:AAE3RAQ9zpGLVBqhw-gqDVYdbwB0_KIdPEM';
+const telegramToken = '8453258126:AAHXw2nTouSsl3pKq4bnYF4HHkCgF4RlcSY';
 const {
   insertOrder,
   getOrdersByUser,
