@@ -1,0 +1,22 @@
+{
+  "name": "gsuite",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "googleapis": "^161.0.0",
+    "moment-timezone": "^0.6.0",
+    "mysql2": "^3.15.1",
+    "node-telegram-bot-api": "^0.66.0",
+    "qrcode": "^1.5.4",
+    "xendit-node": "^7.0.0"
+  }
+}
