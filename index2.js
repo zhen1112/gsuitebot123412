@@ -370,7 +370,7 @@ function buildOrderKeyboard(order) {
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const username = msg.from.username || 'unknown';
-  const domain = 'cegil.com'
+  const domain = 'cegil.id'
   const password = 'Masuk123'
   await insertUser(chatId, username, domain, password);
   sendMainMenu(chatId, username);
