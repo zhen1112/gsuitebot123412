@@ -938,7 +938,18 @@ if (data.startsWith("saldo_")) {
   const jumlahProdukRaw = parts[2]?.trim() || "1 PCS";
   const total = parseInt(parts[3]) || 0;
   console.log(total)
-  const reduceRes = await reduceUserSaldo(chatId, total);
+  try {
+  await reduceUserSaldo(chatId, total);
+  } catch (err) {
+    console.error("❌ Gagal reduce saldo:", err.response?.data || err.message);
+  
+    const errorMsg = err.response?.data?.error || err.message;
+    if (errorMsg.includes("Saldo tidak cukup")) {
+      return bot.sendMessage(chatId, "❌ Saldo kamu tidak cukup! Silakan top up dulu ke admin ganteng 😎");
+    } else {
+      return bot.sendMessage(chatId, `⚠️ Terjadi kesalahan saat memotong saldo: ${errorMsg}`);
+    }
+  }
   if (reduceRes.ok) {
     console.log(`💰 Saldo user ${chatId} berhasil dikurangi sebesar Rp${total.toLocaleString()}`);
   }
@@ -952,13 +963,6 @@ if (data.startsWith("saldo_")) {
   const saldoUser = await getUserSaldo(chatId);
   const saldoSekarang = parseFloat(saldoUser?.saldo || 0);
   const password = await getUserPassword(chatId);
-
-  if (saldoSekarang < total) {
-    return bot.sendMessage(
-      chatId,
-      '❌ Saldo kamu tidak cukup! Silakan top up dulu ke admin ganteng 😎'
-    );
-  }
 
   const tipe = order?.tipe_produk || 'urut';
   const domain = await getUserDomain(chatId) || 'cegil.id';
