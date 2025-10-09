@@ -901,11 +901,12 @@ if (data === 'profil') {
   const formattedDate = formatDateWithDay(now);
   const safeUsername = escapeMarkdown(usernamed);
   const { total_transaksi: totalTransaksiUser } = await getTotalTransaksiByChatId(chatId);
+  const saldoUser = await getUserSaldo(chatId)
   const message = `👤 *User Profile*
   
 └ *ID:* ${chatId}
 └ *Username:* @${safeUsername || 'Tidak tersedia'}
-└ *Saldo Pengguna:* Rp. 0
+└ *Saldo Pengguna:* Rp. ${saldoUser.saldo}
 └ *Total Transaksi:* Rp. ${totalTransaksiUser}
 
 *${formattedDate}*
