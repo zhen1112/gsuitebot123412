@@ -307,7 +307,7 @@ function buildOrderText(order) {
   // escapeMarkdown hanya di sini
   const mark = (value, selected) => (value === selected ? `✅ *${escapeMarkdown(value)}*` : `◽️ ${escapeMarkdown(value)}`);
 
-  const jumlahOptions = ['2 PCS', '50 PCS', '100 PCS'];
+  const jumlahOptions = ['20 PCS', '50 PCS', '100 PCS'];
   const durasiOptions = ['1 Hari', '3 Hari', '7 Hari'];
   const tipeOptions = ['Urut', 'Random'];
 
@@ -344,7 +344,7 @@ function buildOrderKeyboard(order) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: mark('2 PCS', jumlah), callback_data: 'jumlah_2 PCS' },
+          { text: mark('20 PCS', jumlah), callback_data: 'jumlah_20 PCS' },
           { text: mark('50 PCS', jumlah), callback_data: 'jumlah_50 PCS' },
           { text: mark('100 PCS', jumlah), callback_data: 'jumlah_100 PCS' },
         ],
