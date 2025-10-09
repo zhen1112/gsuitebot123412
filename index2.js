@@ -3,8 +3,9 @@ const moment = require('moment-timezone');
 const { deleteExpiredGsuite } = require('./deleteExpiredUsers');
 
 
-const telegramToken = '8453258126:AAHXw2nTouSsl3pKq4bnYF4HHkCgF4RlcSY';
+const telegramToken = '8430362255:AAE3RAQ9zpGLVBqhw-gqDVYdbwB0_KIdPEM';
 const {
+  getAllChatIds,
   insertOrder,
   getOrdersByUser,
   insertUser,
@@ -18,6 +19,8 @@ const {
   getTotalTransaksiByChatId,
   getTotalTransaksiSemuaUser,
   getTotalUsers,
+  getUserSaldo,
+  reduceUserSaldo
 } = require('./apicurl.js');
 const { createQRIS, checkQrisStatus } = require('./qris.js');
 const fs = require('fs');
@@ -158,7 +161,7 @@ async function sendMainMenu(chatId, username) {
   const { total_transaksi: totalTransaksiUser } = await getTotalTransaksiByChatId(chatId);
   const { total_transaksi: totalTransaksiGlobal } = await getTotalTransaksiSemuaUser();
   const totalUser = await getTotalUsers()
-
+  const saldoUser = await getUserSaldo(chatId)
   const caption = `
 Halo ${username} 👋🏼
 *${formattedDate}*
@@ -167,7 +170,7 @@ Halo ${username} 👋🏼
 └ *ID:* \`${chatId}\`
 └ *Username:* @${escapeMarkdown(username)}
 └ *Transaksi:* Rp. ${totalTransaksiUser}
-└ *Saldo Pengguna*: Rp${saldo.toLocaleString()}
+└ *Saldo Pengguna*: Rp${saldoUser.saldo.toLocaleString()}
 
 *BOT Stats: *
 └ *Total Transaksi:* ${totalTransaksiGlobal}
@@ -204,13 +207,12 @@ Halo ${username} 👋🏼
   });
 }
 async function cancelMenu(chatId, username) {
-    const saldo = 0;
   const now = new Date();
   const formattedDate = formatDateWithDay(now);
   const { total_transaksi: totalTransaksiUser } = await getTotalTransaksiByChatId(chatId);
   const { total_transaksi: totalTransaksiGlobal } = await getTotalTransaksiSemuaUser();
   const totalUser = await getTotalUsers()
-
+  const saldoUser = await getUserSaldo(chatId)
   const caption = `
 Halo ${username} 👋🏼
 *${formattedDate}*
@@ -219,7 +221,7 @@ Halo ${username} 👋🏼
 └ *ID:* \`${chatId}\`
 └ *Username:* @${escapeMarkdown(username)}
 └ *Transaksi:* Rp. ${totalTransaksiUser}
-└ *Saldo Pengguna*: Rp${saldo.toLocaleString()}
+└ *Saldo Pengguna*: Rp${saldoUser.saldo.toLocaleString()}
 
 *BOT Stats: *
 └ *Total Transaksi:* ${totalTransaksiGlobal}
@@ -256,7 +258,7 @@ async function kembali(chatId, messageId, username) {
   const { total_transaksi: totalTransaksiUser } = await getTotalTransaksiByChatId(chatId);
   const { total_transaksi: totalTransaksiGlobal } = await getTotalTransaksiSemuaUser();
   const totalUser = await getTotalUsers()
-
+  const saldoUser = await getUserSaldo(chatId)
   const caption = `
 Halo ${username} 👋🏼
 *${formattedDate}*
@@ -265,7 +267,7 @@ Halo ${username} 👋🏼
 └ *ID:* \`${chatId}\`
 └ *Username:* @${escapeMarkdown(username)}
 └ *Transaksi:* Rp. ${totalTransaksiUser}
-└ *Saldo Pengguna*: Rp${saldo.toLocaleString()}
+└ *Saldo Pengguna*: Rp${saldoUser.saldo.toLocaleString()}
 
 *BOT Stats: *
 └ *Total Transaksi:* ${totalTransaksiGlobal}
@@ -305,7 +307,7 @@ function buildOrderText(order) {
   // escapeMarkdown hanya di sini
   const mark = (value, selected) => (value === selected ? `✅ *${escapeMarkdown(value)}*` : `◽️ ${escapeMarkdown(value)}`);
 
-  const jumlahOptions = ['20 PCS', '50 PCS', '100 PCS'];
+  const jumlahOptions = ['2 PCS', '50 PCS', '100 PCS'];
   const durasiOptions = ['1 Hari', '3 Hari', '7 Hari'];
   const tipeOptions = ['Urut', 'Random'];
 
@@ -342,7 +344,7 @@ function buildOrderKeyboard(order) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: mark('20 PCS', jumlah), callback_data: 'jumlah_20 PCS' },
+          { text: mark('2 PCS', jumlah), callback_data: 'jumlah_2 PCS' },
           { text: mark('50 PCS', jumlah), callback_data: 'jumlah_50 PCS' },
           { text: mark('100 PCS', jumlah), callback_data: 'jumlah_100 PCS' },
         ],
@@ -372,7 +374,8 @@ bot.onText(/\/start/, async (msg) => {
   const username = msg.from.username || 'unknown';
   const domain = 'cegil.id'
   const password = 'Masuk123'
-  await insertUser(chatId, username, domain, password);
+  const saldo  = '0'
+  await insertUser(chatId, username, domain, password, saldo);
   sendMainMenu(chatId, username);
 });
 bot.onText(/\/settings/, async (msg) => {
@@ -923,6 +926,154 @@ if (data === 'profil') {
 
   await bot.answerCallbackQuery({ callback_query_id: callbackQuery.id });
 }
+ //=============== BAYAR SALDO TITIT =============
+if (data.startsWith("saldo_")) {
+  // contoh callback_data: saldo_3 Hari_50 PCS_25000
+  const order = userOrders[chatId];
+  const parts = data.split('_');
+
+  // Parsing aman
+  const durasiRaw = parts[1]?.trim() || "1 Hari";
+  const jumlahProdukRaw = parts[2]?.trim() || "1 PCS";
+  const total = parseInt(parts[3]) || 0;
+  console.log(total)
+  const reduceRes = await reduceUserSaldo(chatId, total);
+  if (reduceRes.ok) {
+    console.log(`💰 Saldo user ${chatId} berhasil dikurangi sebesar Rp${total.toLocaleString()}`);
+  }
+  // Ambil angka dari string (contoh: "✅ 3 Hari" → 3)
+  const jumlahHari = parseInt(durasiRaw.replace(/[^0-9]/g, ""), 10) || 1;
+  const jumlahProduk = parseInt(jumlahProdukRaw.replace(/[^0-9]/g, ""), 10) || 1;
+
+  const now = new Date();
+  const invoice = generateInvoiceNumber();
+
+  const saldoUser = await getUserSaldo(chatId);
+  const saldoSekarang = parseFloat(saldoUser?.saldo || 0);
+  const password = await getUserPassword(chatId);
+
+  if (saldoSekarang < total) {
+    return bot.sendMessage(
+      chatId,
+      '❌ Saldo kamu tidak cukup! Silakan top up dulu ke admin ganteng 😎'
+    );
+  }
+
+  const tipe = order?.tipe_produk || 'urut';
+  const domain = await getUserDomain(chatId) || 'cegil.id';
+
+  // Hitung tanggal expired
+  const expiredDate = new Date();
+  expiredDate.setDate(expiredDate.getDate() + jumlahHari);
+  const pad = n => String(n).padStart(2, '0');
+  const newExpired = `${expiredDate.getFullYear()}-${pad(expiredDate.getMonth() + 1)}-${pad(expiredDate.getDate())} ${pad(expiredDate.getHours())}:${pad(expiredDate.getMinutes())}:${pad(expiredDate.getSeconds())}`;
+
+  // Insert order ke database
+  const orderId = await insertOrder({
+    chat_id: chatId,
+    username: usernamed,
+    jumlah_produk: jumlahProduk,
+    durasi_produk: `${jumlahHari} Hari`,
+    tipe_produk: tipe,
+    harga_satuan: total / jumlahProduk,
+    total_harga: total,
+    metode_pembayaran: 'Saldo',
+    status: 'Selesai',
+    qr_id: 'By Saldo',
+    invoice,
+    tanggal_order: now,
+    expired: newExpired,
+  });
+
+  // Generate username akun
+  const usernames = Array.from({ length: jumlahProduk }, (_, i) => {
+    if (tipe.toLowerCase() === "urut") return `usr${invoice.slice(-4)}${i + 1}`;
+    return `usr${Math.random().toString(36).substring(2, 7)}`;
+  });
+
+  // Buat akun
+  const results = await Promise.allSettled(
+    usernames.map(u => createUser(u, domain, chatId, invoice, password, newExpired))
+  );
+
+  const credentials = results.map((r, i) =>
+    r.status === "fulfilled" && r.value
+      ? `${r.value.email.toLowerCase()}`
+      : `❌ Gagal buat user: ${`${usernames[i]}@${domain}`.toLowerCase()}`
+  );
+
+  // Jika semua gagal, stop
+  if (!credentials.some(c => !c.startsWith('❌'))) {
+    await bot.sendMessage(chatId, "❌ Semua akun gagal dibuat. Tidak ada file yang bisa dikirim.");
+    console.error("❌ Semua akun gagal dibuat:", results);
+    return;
+  }
+  // Tulis file daftar akun
+  const fileName = `${invoice}.txt`;
+  fs.writeFileSync(fileName, credentials.join("\n"));
+
+  const firstSuccess = results.find(r => r.status === "fulfilled" && r.value);
+  const firstEmail = firstSuccess?.value?.email || "N/A";
+  const firstPassword = firstSuccess?.value?.password || "N/A";
+  const firstId = firstEmail.split("@")[0].replace(/\d+$/, "").toLowerCase();
+
+  // Pesan sukses
+  const orderDateFormatted = new Date().toLocaleString('id-ID');
+  const successMessage = `
+✅ *PEMBAYARAN BERHASIL!*
+─────────────────────
+Terima kasih 🎉 Pesanan kamu telah diproses dan akun GSuite berhasil dibuat.
+
+🧾 *INFORMASI ORDER*
+├ 🧩 Nomor Invoice : \`${invoice}\`
+├ 📅 Tanggal Order : ${orderDateFormatted}
+└ 💳 Metode Bayar  : Saldo
+
+📦 *RINCIAN PESANAN*
+├ 🏷️ Produk        : Google GSuite
+├ ⏳ Durasi        : ${jumlahHari} Hari
+├ 📦 Jumlah        : ${jumlahProduk} PCS
+├ 💸 Harga Satuan  : Rp${(total / jumlahProduk).toLocaleString()}
+└ 💰 Total Bayar   : Rp${total.toLocaleString()}
+
+📂 File daftar akun GSuite akan dikirim di bawah ini ⬇️
+`;
+
+  await bot.editMessageCaption(successMessage, {
+    chat_id: chatId,
+    message_id: msgId,
+    parse_mode: "Markdown"
+  });
+
+  // Kirim file daftar akun
+  const docCaption = `
+🔰 *Google GSuite*
+
+📦 *Transaksi*
+• *Invoice*: \`${invoice}\`
+• *Tanggal*: ${orderDateFormatted}
+
+🧩 *Produk*
+• *Nama*: Google GSuite
+• *Durasi*: ${jumlahHari} Hari
+• *Tipe*: ${tipe}
+• *Jumlah*: ${jumlahProduk} PCS
+
+🔐 *Akun*
+• *ID*: \`${firstId}\`
+• *Password*: \`${firstPassword}\`
+• *Expired*: ${newExpired} WIB
+`;
+
+  await bot.sendDocument(chatId, fileName, {
+    caption: docCaption,
+    parse_mode: "Markdown"
+  });
+
+  fs.unlinkSync(fileName);
+
+  return bot.answerCallbackQuery({ callback_query_id: callbackQuery.id });
+}
 
   // ==================== KEMBALI KE MENU ====================
   if (data === 'kembali') {
@@ -951,7 +1102,9 @@ if (data === 'profil') {
 
 💳 *Pilih Pembayaran*
 `;
-
+  const durasihari = order.durasi;
+  const durasi = durasihari.split(" ")[0];
+  const jumlahorder= order.jumlah.split(" ")[0];
   // Cek apakah message sebelumnya adalah photo
   if (msg.photo) {
     // Edit caption photo yang sudah ada
@@ -963,7 +1116,7 @@ if (data === 'profil') {
         inline_keyboard: [
           [
             { text: '💳 Pakai QRIS', callback_data: 'bayar_qris' },
-            { text: '💰 Pakai Saldo', callback_data: 'bayar_saldo' },
+            { text: '💰 Pakai Saldo', callback_data: `saldo_${durasi}_${order.jumlah}_${order.total}` },
           ],
           [{ text: '❌ Cancel', callback_data: 'kembali' }],
         ],
@@ -978,14 +1131,14 @@ if (data === 'profil') {
         inline_keyboard: [
           [
             { text: '💳 Bayar via QRIS', callback_data: 'bayar_qris' },
-            { text: '💰 Bayar via Saldo', callback_data: 'bayar_saldo' },
+            { text: '💰 Bayar via Saldo', callback_data: `saldo_${durasi}_${jumlahorder}_${order.total}` },
           ],
           [{ text: '↩️ Kembali', callback_data: 'kembali' }],
         ],
       },
     });
   }
-
+  await reduceUserSaldo(chatId, total);
   return bot.answerCallbackQuery({ callback_query_id: callbackQuery.id });
 }
 
@@ -993,7 +1146,37 @@ if (data === 'profil') {
 
   return bot.answerCallbackQuery({ callback_query_id: callbackQuery.id });
 });
+bot.onText(/^\/broadcast (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const ADMIN_ID = 1056460575;
+  if (chatId !== ADMIN_ID) return bot.sendMessage(chatId, '❌ Kamu bukan admin!');
 
+  const message = match[1];
+  bot.sendMessage(chatId, '⏳ Mengambil daftar pengguna...');
+
+  try {
+    const chatIds = await getAllChatIds();
+    bot.sendMessage(chatId, `📡 Mulai kirim ke ${chatIds.length} pengguna...`);
+
+    let success = 0;
+    let fail = 0;
+
+    for (const id of chatIds) {
+      try {
+        await bot.sendMessage(id, message);
+        success++;
+        await new Promise(res => setTimeout(res, 400)); // delay biar gak kena limit
+      } catch (err) {
+        fail++;
+        console.error(`❌ Gagal kirim ke ${id}: ${err.message}`);
+      }
+    }
+
+    bot.sendMessage(chatId, `✅ Broadcast selesai!\n📤 Berhasil: ${success}\n❌ Gagal: ${fail}`);
+  } catch (err) {
+    bot.sendMessage(chatId, `❌ Gagal broadcast: ${err.message}`);
+  }
+});
 // ==================== Other callbacks (jumlah/durasi/tipe, bayar, history, info, kembali) ====================
 // Sama seperti sebelumnya, cukup pastikan:
 // - Tidak edit text message yang sebelumnya adalah photo/document
