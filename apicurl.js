@@ -2,8 +2,8 @@ const axios = require('axios');
 const BASE_API = 'https://api.premiumisme.my.id';
 
 module.exports = {
-  insertUser: async (chatId, username, domain, password) => {
-    const res = await axios.post(`${BASE_API}/user`, { chatId, username, domain, password });
+  insertUser: async (chatId, username, domain, password, saldo) => {
+    const res = await axios.post(`${BASE_API}/user`, { chatId, username, domain, password, saldo });
     return res.data;
   },
   updateUserDomain: async (chatId, domain) => {
@@ -73,5 +73,20 @@ module.exports = {
     const res = await axios.post(`${BASE_API}/gsuite_user/edit`, { email, deleted });
     return res.data;
   },
+    getUserSaldo: async (chatId) => {
+    const res = await axios.get(`${BASE_API}/user/${chatId}/saldo`);
+    return res.data;
+  },
+  reduceUserSaldo: async (chatId, amount) => {
+    const res = await axios.post(`${BASE_API}/user/reduce-saldo`, {
+      chat_id: chatId,
+      amount,
+    });
+    return res.data;
+  },
+  getAllChatIds: async () => {
+    const res = await axios.get(`${BASE_API}/broadcast/chat-ids`);
+    return res.data.chatIds;
+  }
 
 };
