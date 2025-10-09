@@ -950,9 +950,7 @@ if (data.startsWith("saldo_")) {
       return bot.sendMessage(chatId, `⚠️ Terjadi kesalahan saat memotong saldo: ${errorMsg}`);
     }
   }
-  if (reduceRes.ok) {
-    console.log(`💰 Saldo user ${chatId} berhasil dikurangi sebesar Rp${total.toLocaleString()}`);
-  }
+
   // Ambil angka dari string (contoh: "✅ 3 Hari" → 3)
   const jumlahHari = parseInt(durasiRaw.replace(/[^0-9]/g, ""), 10) || 1;
   const jumlahProduk = parseInt(jumlahProdukRaw.replace(/[^0-9]/g, ""), 10) || 1;
