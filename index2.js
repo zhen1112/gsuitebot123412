@@ -1148,7 +1148,7 @@ Terima kasih 🎉 Pesanan kamu telah diproses dan akun GSuite berhasil dibuat.
 });
 bot.onText(/^\/broadcast (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const ADMIN_ID = 1056460575;
+  const ADMIN_ID = 1737464807;
   if (chatId !== ADMIN_ID) return bot.sendMessage(chatId, '❌ Kamu bukan admin!');
 
   const message = match[1];
